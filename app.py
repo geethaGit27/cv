@@ -1,32 +1,37 @@
+# app.py
 import streamlit as st
-from tensorflow.keras.models import load_model
+from sklearn.datasets import load_digits
+from sklearn.ensemble import RandomForestClassifier
 from PIL import Image
 import numpy as np
-import os
+import io
 
-# Load model
-MODEL_PATH = 'mnist_model.h5'
-if not os.path.exists(MODEL_PATH):
-    url = "https://drive.google.com/uc?id=YOUR_FILE_ID"
-    gdown.download(url, MODEL_PATH, quiet=False)
-else:
-    st.error("Model file not found! Train it first.")
+st.title("MNIST Digit Recognition (No TensorFlow)")
 
-st.title("MNIST Digit Recognition")
+# Step 1: Train a tiny model (RandomForest)
+@st.cache_data
+def train_model():
+    digits = load_digits()
+    X, y = digits.data, digits.target
+    clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    clf.fit(X, y)
+    return clf
 
-# Upload an image
-uploaded_file = st.file_uploader("Upload a handwritten digit image", type=["png", "jpg", "jpeg"])
+model = train_model()
+
+# Step 2: Upload handwritten digit
+uploaded_file = st.file_uploader("Upload a handwritten digit image (28x28 grayscale)", type=["png","jpg","jpeg"])
 
 if uploaded_file is not None:
+    # Open image
     img = Image.open(uploaded_file).convert("L")
-    img_resized = img.resize((28,28))
-    st.image(img_resized, caption="Resized Image", use_column_width=False)
+    img_resized = img.resize((8,8))  # match sklearn digits size
+    st.image(img_resized, caption="Resized to 8x8", use_column_width=False)
 
-    img_array = np.array(img_resized)/255.0
-    img_array = img_array.reshape(1,28,28)
+    # Convert image to sklearn format
+    img_array = np.array(img_resized)
+    img_scaled = (16 - (img_array / 255.0 * 16)).flatten().reshape(1,-1)
 
     # Predict
-    prediction = model.predict(img_array)
-    digit = np.argmax(prediction)
-
-    st.success(f"Predicted Digit: {digit}")
+    pred = model.predict(img_scaled)
+    st.success(f"Predicted Digit: {pred[0]}")
