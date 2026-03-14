@@ -7,8 +7,9 @@ import os
 
 # Load model
 MODEL_PATH = 'mnist_model.h5'
-if os.path.exists(MODEL_PATH):
-    model = load_model(MODEL_PATH)
+if not os.path.exists(MODEL_PATH):
+    url = "https://drive.google.com/uc?id=YOUR_FILE_ID"
+    gdown.download(url, MODEL_PATH, quiet=False)
 else:
     st.error("Model file not found! Train it first.")
 
